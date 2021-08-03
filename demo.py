@@ -18,6 +18,7 @@ from animate import normalize_kp
 from scipy.spatial import ConvexHull
 
 
+
 if sys.version_info[0] < 3:
     raise Exception("You must use Python 3 or higher. Recommended version is Python 3.7")
 
@@ -153,5 +154,16 @@ if __name__ == "__main__":
         predictions = predictions_backward[::-1] + predictions_forward[1:]
     else:
         predictions = make_animation(source_image, driving_video, generator, kp_detector, relative=opt.relative, adapt_movement_scale=opt.adapt_scale, cpu=opt.cpu)
-    imageio.mimsave(opt.result_video, [img_as_ubyte(frame) for frame in predictions], fps=fps)
+
+    source_thumbnail = resize(source_image, (64, 64))
+    result = []
+    shape = driving_video[0].shape
+    for i in range(len(driving_video)):
+        r = np.zeros((shape[0], shape[1] * 2, shape[2]), driving_video[0].dtype)
+        r[:, :shape[1], :] = driving_video[i]
+        r[:, shape[1]:, :] = predictions[i]
+        r[:source_thumbnail.shape[0], :source_thumbnail.shape[1], :] = source_thumbnail
+        result.append(r)
+
+    imageio.mimsave(opt.result_video, [img_as_ubyte(frame) for frame in result], fps=fps)
 
