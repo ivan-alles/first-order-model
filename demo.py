@@ -129,7 +129,6 @@ if __name__ == "__main__":
 
     opt = parser.parse_args()
 
-    source_image = imageio.imread(opt.source_image)
     reader = imageio.get_reader(opt.driving_video)
     fps = reader.get_meta_data()['fps']
     driving_video = []
@@ -139,6 +138,12 @@ if __name__ == "__main__":
     except RuntimeError:
         pass
     reader.close()
+
+    if opt.source_image == 'auto':
+        source_image = driving_video[0]
+    else:
+        source_image = imageio.imread(opt.source_image)
+
 
     source_image = resize(source_image, (256, 256))[..., :3]
     driving_video = [resize(frame, (256, 256))[..., :3] for frame in driving_video]
