@@ -1,0 +1,9 @@
+pipenv run pip install -r requirements1.txt
+
+pipenv run pip3 install torch==1.8.1+cu102 torchvision==0.9.1+cu102 torchaudio===0.8.1 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+
+pipenv run pip install face-alignment
+
+python crop-video.py --inp ..\ca\test-data\v.mp4
+
+python demo.py  --config config\vox-256.yaml --driving_video "..\ca\test-data\video01-crop.mp4" --source_image "..\ca\test-data\face02.jpg" --checkpoint models\vox-cpk.pth.tar --relative --adapt_scale
