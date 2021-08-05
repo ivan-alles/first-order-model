@@ -139,7 +139,7 @@ if __name__ == "__main__":
         pass
     reader.close()
 
-    if opt.source_image == 'auto':
+    if opt.source_image == 'frame0':
         source_image = driving_video[0]
     else:
         source_image = imageio.imread(opt.source_image)
