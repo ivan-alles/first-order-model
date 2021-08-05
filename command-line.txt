@@ -6,4 +6,4 @@ pipenv run pip install face-alignment
 
 python crop-video.py --inp ..\ca\test-data\v.mp4
 
-python demo.py  --config config\vox-256.yaml --driving_video "..\ca\test-data\video01-crop.mp4" --source_image auto --checkpoint models\vox-cpk.pth.tar --relative --adapt_scale
+python demo.py  --config config\vox-256.yaml --driving_video "..\ca\test-data\video01.mp4" --source_image frame0 --checkpoint models\vox-cpk.pth.tar --relative --adapt_scale

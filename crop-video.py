@@ -92,6 +92,8 @@ def process_video(args):
     commands = []
     try:
         for i, frame in tqdm(enumerate(video)):
+            if i > 25 * 120:
+                break
             frame_shape = frame.shape
             bboxes =  extract_bbox(frame, fa)
             ## For each trajectory check the criterion

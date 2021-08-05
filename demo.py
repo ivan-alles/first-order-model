@@ -139,8 +139,9 @@ if __name__ == "__main__":
         pass
     reader.close()
 
-    if opt.source_image == 'frame0':
-        source_image = driving_video[0]
+    if opt.source_image.startswith('frame'):
+        frame_idx = int(opt.source_image[5:])
+        source_image = driving_video[frame_idx]
     else:
         source_image = imageio.imread(opt.source_image)
 
