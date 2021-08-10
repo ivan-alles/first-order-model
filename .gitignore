@@ -4,3 +4,5 @@ __pycache__
 .idea
 models
 result.mp4
+log
+data/voxceleb2
