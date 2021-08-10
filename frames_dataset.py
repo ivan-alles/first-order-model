@@ -2,6 +2,7 @@ import os
 from skimage import io, img_as_float32
 from skimage.color import gray2rgb
 from sklearn.model_selection import train_test_split
+import imageio
 from imageio import mimread
 
 import numpy as np
@@ -40,7 +41,15 @@ def read_video(name, frame_shape):
         video_array = video_array.reshape((-1,) + frame_shape)
         video_array = np.moveaxis(video_array, 1, 2)
     elif name.lower().endswith('.gif') or name.lower().endswith('.mp4') or name.lower().endswith('.mov'):
-        video = np.array(mimread(name))
+        # See https://github.com/imageio/imageio/issues/262
+        video = []
+        try:
+            for frame in imageio.get_reader(name):
+                video.append(frame)
+        except imageio.core.format.CannotReadFrameError:
+            pass
+        video = np.array(video)
+        # video = np.array(mimread(name))
         if len(video.shape) == 3:
             video = np.array([gray2rgb(frame) for frame in video])
         if video.shape[-1] == 4:
@@ -100,7 +109,7 @@ class FramesDataset(Dataset):
     def __getitem__(self, idx):
         if self.is_train and self.id_sampling:
             name = self.videos[idx]
-            path = np.random.choice(glob.glob(os.path.join(self.root_dir, name + '*.mp4')))
+            path = np.random.choice(glob.glob(os.path.join(self.root_dir, name + '/*.mp4')))
         else:
             name = self.videos[idx]
             path = os.path.join(self.root_dir, name)
