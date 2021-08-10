@@ -5,6 +5,20 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "demo ",
+      "type": "python",
+      "request": "launch",
+      "module": "demo",
+      "args" : [
+        "--config", "config/vox-256.yaml", 
+        "--driving_video", "../ca/test-data/video01.mp4",
+        "--source_image",  "frame0",
+        "--checkpoint",  "models/vox-cpk.pth.tar", 
+        "--relative", 
+        "--adapt_scale"
+      ]
+    },
+    {
       "name": "Python: Remote Attach PC1",
       "type": "python",
       "request": "attach",
