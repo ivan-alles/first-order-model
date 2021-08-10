@@ -4,6 +4,7 @@ from skimage.color import gray2rgb
 from sklearn.model_selection import train_test_split
 import imageio
 from imageio import mimread
+import cv2
 
 import numpy as np
 from torch.utils.data import Dataset
@@ -45,7 +46,9 @@ def read_video(name, frame_shape):
         video = []
         try:
             for frame in imageio.get_reader(name):
+                frame = cv2.resize(frame, frame_shape[:2])
                 video.append(frame)
+
         except imageio.core.format.CannotReadFrameError:
             pass
         video = np.array(video)
