@@ -2,6 +2,19 @@ from torch import nn
 import torch
 import torch.nn.functional as F
 from modules.util import Hourglass, make_coordinate_grid, AntiAliasInterpolation2d
+import cv2
+import numpy as np
+
+
+def show_tensor(t, name):
+    a = t.data.cpu().numpy()
+    i = np.ascontiguousarray(np.rollaxis(a, 0, 3))
+    if i.shape[2] == 3:
+        i = cv2.cvtColor(i, cv2.COLOR_BGR2RGB)
+    else:
+        i = np.squeeze(i)
+    cv2.imshow(name, i)
+    cv2.waitKey(0)
 
 
 class KPDetector(nn.Module):
@@ -50,6 +63,8 @@ class KPDetector(nn.Module):
         if self.scale_factor != 1:
             x = self.down(x)
 
+        # show_tensor(x[0], 'x')
+
         feature_map = self.predictor(x)
         prediction = self.kp(feature_map)
 
@@ -57,6 +72,8 @@ class KPDetector(nn.Module):
         heatmap = prediction.view(final_shape[0], final_shape[1], -1)
         heatmap = F.softmax(heatmap / self.temperature, dim=2)
         heatmap = heatmap.view(*final_shape)
+
+        # show_tensor(heatmap[0, 0:1, :, :], 'heatmap')
 
         out = self.gaussian2kp(heatmap)
 
