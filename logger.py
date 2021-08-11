@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import imageio
+import cv2
 
 import os
 from skimage.draw import circle
@@ -95,6 +96,16 @@ class Logger:
         self.visualize_rec(inp, out)
 
 
+def write_text(image, text, color=(0, 1, 0), pos=(0, 25)):
+    cv2.putText(image, text, pos, cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
+
+
+def make_view(tensor, text):
+    images = np.ascontiguousarray(np.copy(tensor))
+    for i in range(len(images)):
+        write_text(images[i], text)
+    return images
+
 class Visualizer:
     def __init__(self, kp_size=5, draw_border=False, colormap='gist_rainbow'):
         self.kp_size = kp_size
@@ -138,34 +149,34 @@ class Visualizer:
         source = source.data.cpu()
         kp_source = out['kp_source']['value'].data.cpu().numpy()
         source = np.transpose(source, [0, 2, 3, 1])
-        images.append((source, kp_source))
+        images.append((make_view(source, 'source'), kp_source))
 
         # Equivariance visualization
         if 'transformed_frame' in out:
             transformed = out['transformed_frame'].data.cpu().numpy()
             transformed = np.transpose(transformed, [0, 2, 3, 1])
             transformed_kp = out['transformed_kp']['value'].data.cpu().numpy()
-            images.append((transformed, transformed_kp))
+            images.append((make_view(transformed, 'transf'), transformed_kp))
 
         # Driving image with keypoints
         kp_driving = out['kp_driving']['value'].data.cpu().numpy()
         driving = driving.data.cpu().numpy()
         driving = np.transpose(driving, [0, 2, 3, 1])
-        images.append((driving, kp_driving))
+        images.append((make_view(driving, 'driving'), kp_driving))
 
         # Deformed image
         if 'deformed' in out:
             deformed = out['deformed'].data.cpu().numpy()
             deformed = np.transpose(deformed, [0, 2, 3, 1])
-            images.append(deformed)
+            images.append(make_view(deformed, 'deformed'))
 
         # Result with and without keypoints
         prediction = out['prediction'].data.cpu().numpy()
         prediction = np.transpose(prediction, [0, 2, 3, 1])
         if 'kp_norm' in out:
             kp_norm = out['kp_norm']['value'].data.cpu().numpy()
-            images.append((prediction, kp_norm))
-        images.append(prediction)
+            images.append((make_view(prediction, 'prediction'), kp_norm))
+        images.append(make_view(prediction, 'prediction'))
 
 
         ## Occlusion map
@@ -173,7 +184,7 @@ class Visualizer:
             occlusion_map = out['occlusion_map'].data.cpu().repeat(1, 3, 1, 1)
             occlusion_map = F.interpolate(occlusion_map, size=source.shape[1:3]).numpy()
             occlusion_map = np.transpose(occlusion_map, [0, 2, 3, 1])
-            images.append(occlusion_map)
+            images.append(make_view(occlusion_map, 'occ map'))
 
         # Deformed images according to each individual transform
         if 'sparse_deformed' in out:
@@ -193,15 +204,15 @@ class Visualizer:
 
                 color = color.reshape((1, 1, 1, 3))
 
-                images.append(image)
+                images.append(make_view(image, f'sparse deform {i}'))
                 if i != 0:
-                    images.append(mask * color)
+                    images.append(make_view(mask * color, f's.d.{i} mask*color'))
                 else:
-                    images.append(mask)
+                    images.append(make_view(mask, f's.d.{i} mask'))
 
                 full_mask.append(mask * color)
 
-            images.append(sum(full_mask))
+            images.append(make_view(sum(full_mask), 's.d. full_mask'))
 
         image = self.create_image_grid(*images)
         image = (255 * image).astype(np.uint8)
