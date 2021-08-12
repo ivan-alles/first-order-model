@@ -97,13 +97,14 @@ class Logger:
 
 
 def write_text(image, text, color=(0, 1, 0), pos=(0, 25)):
+    color = tuple([float(i) for i in color])
     cv2.putText(image, text, pos, cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
 
 
-def make_view(tensor, text):
+def make_view(tensor, text, color=(0, 1, 0)):
     images = np.ascontiguousarray(np.copy(tensor))
     for i in range(len(images)):
-        write_text(images[i], text)
+        write_text(images[i], text, color=color)
     return images
 
 class Visualizer:
@@ -199,16 +200,20 @@ class Visualizer:
 
                 if i != 0:
                     color = np.array(self.colormap((i - 1) / (out['sparse_deformed'].shape[1] - 1)))[:3]
+                    idx_name = f'{i - 1}'
                 else:
                     color = np.array((0, 0, 0))
+                    idx_name = f'bg'
 
                 color = color.reshape((1, 1, 1, 3))
+                color_t = color.squeeze()
 
-                images.append(make_view(image, f'sparse deform {i}'))
+
+                images.append(make_view(image, f'sparse deform {idx_name}', color=color_t))
                 if i != 0:
-                    images.append(make_view(mask * color, f's.d.{i} mask*color'))
+                    images.append(make_view(mask * color, f's.d.{idx_name} mask', color=color_t))
                 else:
-                    images.append(make_view(mask, f's.d.{i} mask'))
+                    images.append(make_view(mask, f's.d.{idx_name} mask', color=color_t))
 
                 full_mask.append(mask * color)
 
