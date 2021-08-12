@@ -2,6 +2,8 @@ from torch import nn
 
 import torch.nn.functional as F
 import torch
+import numpy as np
+import cv2
 
 from sync_batchnorm import SynchronizedBatchNorm2d as BatchNorm2d
 
@@ -243,3 +245,33 @@ class AntiAliasInterpolation2d(nn.Module):
         out = out[:, :, ::self.int_inv_scale, ::self.int_inv_scale]
 
         return out
+
+
+def make_red_green(image):
+    """
+    Convert a 1 channel image of positive and negative numbers into a color image.
+    Red corresponds to negative numbers, green to positive ones.
+    :param image: one channel image (H, W) or (H, W, 1).
+    :return: a color image.
+    """
+    if np.ndim == 2:
+        image = np.squeeze(image, axis=2)
+    pos = (image >= 0) * image
+    neg = (image <= 0) * image
+    blue = np.zeros(image.shape, dtype=image.dtype)
+    image = np.stack([blue, pos, -neg], axis=-1)
+    return image
+
+
+def show_tensor(t, name, red_green=False):
+    a = t.data.cpu().numpy()
+    i = np.ascontiguousarray(np.rollaxis(a, 0, 3))
+    if i.shape[2] == 3:
+        i = cv2.cvtColor(i, cv2.COLOR_BGR2RGB)
+    else:
+        i = np.squeeze(i)
+        if red_green:
+            i = make_red_green(i)
+
+    cv2.imshow(name, i)
+    cv2.waitKey(0)

@@ -1,7 +1,7 @@
 from torch import nn
 import torch.nn.functional as F
 import torch
-from modules.util import Hourglass, AntiAliasInterpolation2d, make_coordinate_grid, kp2gaussian
+from modules.util import Hourglass, AntiAliasInterpolation2d, make_coordinate_grid, kp2gaussian, show_tensor
 
 
 class DenseMotionNetwork(nn.Module):
@@ -42,6 +42,9 @@ class DenseMotionNetwork(nn.Module):
         zeros = torch.zeros(heatmap.shape[0], 1, spatial_size[0], spatial_size[1]).type(heatmap.type())
         heatmap = torch.cat([zeros, heatmap], dim=1)
         heatmap = heatmap.unsqueeze(2)
+
+        # show_tensor(heatmap[0, 1], 'heatmap', red_green=True)
+
         return heatmap
 
     def create_sparse_motions(self, source_image, kp_driving, kp_source):
