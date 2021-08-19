@@ -6,6 +6,7 @@ from torchvision import models
 import numpy as np
 from torch.autograd import grad
 
+TEST_PERCEPTUAL_LOSS = False
 
 class Vgg19(torch.nn.Module):
     """
@@ -59,12 +60,19 @@ class ImagePyramide(torch.nn.Module):
         downs = {}
         for scale in scales:
             downs[str(scale).replace('.', '-')] = AntiAliasInterpolation2d(num_channels, scale)
+
         self.downs = nn.ModuleDict(downs)
 
     def forward(self, x):
         out_dict = {}
         for scale, down_module in self.downs.items():
-            out_dict['prediction_' + str(scale).replace('-', '.')] = down_module(x)
+            if TEST_PERCEPTUAL_LOSS:
+                s = float(scale.replace('-', '.'))
+                size = (int(x.shape[2] * s), int(x.shape[3] * s))
+                out_dict['prediction_' + str(scale).replace('-', '.')] = F.interpolate(x, size=size, mode='bilinear')
+            else:
+                out_dict['prediction_' + str(scale).replace('-', '.')] = down_module(x)
+
         return out_dict
 
 
@@ -157,6 +165,32 @@ class GeneratorFullModel(torch.nn.Module):
 
         loss_values = {}
 
+        if TEST_PERCEPTUAL_LOSS:
+            import imageio
+            import skimage
+
+            def read_heads():
+                heads = []
+                for i in range(2):
+                    image = imageio.imread(fr'D:\ivan\projects\rotation3d\unittest\data\head{i}.jpg')
+                    image = skimage.img_as_float32(image)
+                    image = np.moveaxis(image, 2, 0)
+                    image = np.expand_dims(image, 0)
+                    image = torch.Tensor(image)
+                    if torch.cuda.is_available():
+                        image = image.cuda()
+                    heads.append(image)
+
+                return heads
+
+            heads = read_heads()
+
+            self.loss_weights['perceptual'] = [0.03125, 0.0625, 0.125, 0.25, 1]
+
+            x['driving'] = heads[0]
+            generated['prediction'] = heads[1]
+
+
         pyramide_real = self.pyramid(x['driving'])
         pyramide_generated = self.pyramid(generated['prediction'])
 
@@ -170,6 +204,10 @@ class GeneratorFullModel(torch.nn.Module):
                     value = torch.abs(x_vgg[i] - y_vgg[i].detach()).mean()
                     value_total += self.loss_weights['perceptual'][i] * value
                 loss_values['perceptual'] = value_total
+
+        if TEST_PERCEPTUAL_LOSS:
+            v = value_total.detach().cpu().numpy()
+            assert np.allclose(v, 12.229783)
 
         if self.loss_weights['generator_gan'] != 0:
             discriminator_maps_generated = self.discriminator(pyramide_generated, kp=detach_kp(kp_driving))
