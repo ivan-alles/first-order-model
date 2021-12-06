@@ -58,6 +58,10 @@ class OcclusionAwareGenerator(nn.Module):
 
     def forward(self, source_image, kp_driving, kp_source):
         # Encoding (downsampling) part
+
+        # torch.manual_seed(0)
+        # source_image = torch.randn(1, 3, 256, 256, device=source_image.device)
+
         out = self.first(source_image)
         for i in range(len(self.down_blocks)):
             out = self.down_blocks[i](out)
@@ -86,6 +90,9 @@ class OcclusionAwareGenerator(nn.Module):
             output_dict["deformed"] = self.deform_input(source_image, deformation)
 
         # Decoding part
+        # torch.manual_seed(0)
+        # out = torch.randn(1, 256, 64, 64, device=out.device)
+
         out = self.bottleneck(out)
         for i in range(len(self.up_blocks)):
             out = self.up_blocks[i](out)
