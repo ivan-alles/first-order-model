@@ -48,15 +48,17 @@ def train(config, generator, discriminator, kp_detector, checkpoint, log_dir, da
     with Logger(log_dir=log_dir, visualizer_params=config['visualizer_params'], checkpoint_freq=train_params['checkpoint_freq']) as logger:
         for epoch in trange(start_epoch, train_params['num_epochs']):
             for x in dataloader:
+                generator_full.eval()
+                
                 losses_generator, generated = generator_full(x)
 
                 loss_values = [val.mean() for val in losses_generator.values()]
                 loss = sum(loss_values)
 
                 loss.backward()
-                optimizer_generator.step()
+                # optimizer_generator.step()
                 optimizer_generator.zero_grad()
-                optimizer_kp_detector.step()
+                # optimizer_kp_detector.step()
                 optimizer_kp_detector.zero_grad()
 
                 if train_params['loss_weights']['generator_gan'] != 0:
