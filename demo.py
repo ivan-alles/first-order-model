@@ -5,6 +5,7 @@ import yaml
 from argparse import ArgumentParser
 from tqdm import tqdm
 
+import cv2
 import imageio
 import numpy as np
 from skimage.transform import resize
@@ -171,5 +172,13 @@ if __name__ == "__main__":
         r[:source_thumbnail.shape[0], :source_thumbnail.shape[1], :] = source_thumbnail
         result.append(r)
 
-    imageio.mimsave(opt.result_video, [img_as_ubyte(frame) for frame in result], fps=fps)
+    if False:
+        imageio.mimsave(opt.result_video, [img_as_ubyte(frame) for frame in result], fps=fps)
+    else:
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        video_writer = cv2.VideoWriter(opt.result_video, fourcc, 30, (shape[1] * 2, shape[0]))
+        for f in result:
+            image = (f * 255).astype(np.uint8)[:, :, ::-1]
+            video_writer.write(image)
 
+        video_writer.release()
