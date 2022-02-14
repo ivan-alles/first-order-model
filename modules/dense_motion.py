@@ -43,7 +43,11 @@ class DenseMotionNetwork(nn.Module):
         heatmap = torch.cat([zeros, heatmap], dim=1)
         heatmap = heatmap.unsqueeze(2)
 
-        # show_tensor(heatmap[0, 1], 'heatmap', red_green=True)
+        for i in range(gaussian_source.shape[1]):
+            show_tensor(f'gs-{i}', gaussian_source[:, i:i+1], red_green=True)
+            show_tensor(f'gd-{i}', gaussian_driving[:, i:i+1], red_green=True)
+        for i in range(heatmap.shape[1]):
+            show_tensor(f'hm-{i}', heatmap[:, i], red_green=True)
 
         return heatmap
 

@@ -247,31 +247,95 @@ class AntiAliasInterpolation2d(nn.Module):
         return out
 
 
-def make_red_green(image):
+def make_red_green_image(image):
     """
-    Convert a 1 channel image of positive and negative numbers into a color image.
-    Red corresponds to negative numbers, green to positive ones.
+    Convert a 1 channel image of positive and negative numbers into a color image
+    for visualization. Red corresponds to negative numbers, green to positive ones.
     :param image: one channel image (H, W) or (H, W, 1).
-    :return: a color image.
+    :return: a 3-channel image in RGB format.
     """
     if np.ndim == 2:
         image = np.squeeze(image, axis=2)
     pos = (image >= 0) * image
     neg = (image <= 0) * image
     blue = np.zeros(image.shape, dtype=image.dtype)
-    image = np.stack([blue, pos, -neg], axis=-1)
-    return image
+    rg = np.stack([-neg, pos, blue], axis=-1)
+    return rg
 
 
-def show_tensor(t, name, red_green=False):
-    a = t.data.cpu().numpy()
-    i = np.ascontiguousarray(np.rollaxis(a, 0, 3))
-    if i.shape[2] == 3:
-        i = cv2.cvtColor(i, cv2.COLOR_BGR2RGB)
-    else:
-        i = np.squeeze(i)
-        if red_green:
-            i = make_red_green(i)
+def make_red_green(t):
+    """
+    Convert a tensor of positive and negative numbers into a color image for visualization.
+    Red corresponds to negative numbers, green to positive ones.
+    :param t: tensor (B, H, W)
+    :return: tensor (B, 3, H, W) in RGB format.
+    """
+    with torch.no_grad():
+        pos = (t >= 0) * t
+        neg = (t <= 0) * t
+        blue = torch.zeros_like(t)
+        rg = torch.stack([-neg, pos, blue], axis=1)
+    return rg
 
-    cv2.imshow(name, i)
-    cv2.waitKey(0)
+
+def show_flow(flow, scale=10):
+    """
+    Create image tensors for flow visualization.
+    :param flow: a tensor (B, H, W, 2).
+    :param scale: scale factor
+    :return: flow_x, flow_y images (B, 3, H, W).
+    """
+    with torch.no_grad():
+        flow_vis = []
+        for i in range(flow.shape[-1]):
+            flow_vis.append(make_red_green(flow[..., i] * scale).clip(0, 1))
+    return tuple(flow_vis)
+
+
+def tensor_to_images(t, red_green=None):
+    """
+    Convert a tensor to images for visualization.
+    :param t: a tensor (B, C, H, W) or (C, H, W)
+    :param red_green: if C == 1, show negative values in red and positive in green. None: autodetect.
+    :return: a list of HWC, 3 channel images.
+    """
+    if type(t) == torch.Tensor:
+        t = t.detach().cpu().numpy()
+
+    if t.ndim < 3 or t.ndim > 4:
+        raise ValueError('Unsupported tensor shape')
+
+    if t.ndim == 3:
+        t = np.expand_dims(t, 0)
+
+    t = np.ascontiguousarray(np.moveaxis(t, 1, -1))
+    result = []
+    for i in range(len(t)):
+        image = t[i]
+        if image.shape[2] == 1:
+            image = np.squeeze(image)
+        if image.ndim == 2:
+            if red_green is None and image.min() < 0:
+                red_green = True
+            if red_green:
+                image = make_red_green_image(image)
+        if image.ndim == 2:
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+        result.append(image)
+    return result
+
+
+def show_tensor(name, t, red_green=None, wait_key_time=1):
+    """
+    Show  tensor in a window.
+    :param name: window name
+    :param t: a tensor (B, C, H, W) or (C, H, W)
+    :param red_green: if C == 1, show negative values in red and positive in green. None: autodetect.
+    :param wait_key_time: a time in ms to wait for a keypress. 0 - wait forever.
+    :return:
+    """
+    images = tensor_to_images(t, red_green)
+    for i, image in enumerate(images):
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        cv2.imshow(name+f'-{i}', image)
+    cv2.waitKey(wait_key_time)

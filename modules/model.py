@@ -166,15 +166,14 @@ class GeneratorFullModel(torch.nn.Module):
         loss_values = {}
 
         if TEST_PERCEPTUAL_LOSS:
-            import imageio
-            import skimage
-
+            import cv2
             def read_heads():
                 heads = []
                 for i in range(2):
-                    image = imageio.imread(fr'D:\ivan\projects\rotation3d\unittest\data\head{i}.jpg')
-                    image = skimage.img_as_float32(image)
-                    image = np.moveaxis(image, 2, 0)
+                    image = cv2.imread(fr'D:\ivan\projects\rotation3d\common\unittest\data\head{i}.jpg')
+                    image = image.astype(np.float32) / 255
+                    image = image[..., ::-1]  # BGR->RGB
+                    image = np.ascontiguousarray(np.moveaxis(image, 2, 0))
                     image = np.expand_dims(image, 0)
                     image = torch.Tensor(image)
                     if torch.cuda.is_available():
